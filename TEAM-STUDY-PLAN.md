@@ -257,5 +257,5 @@ Domain weights: Agentic Architecture 27% · Claude Code Config 20% · Prompt Eng
 | Pavel | | | | | |
 | Andy | | | | | |
 | Gabi | | | | | |
-| Christiaan | | | | | |
+| Christiaan | no | 2 | 0 | | |
 | Oz | | | | | |
