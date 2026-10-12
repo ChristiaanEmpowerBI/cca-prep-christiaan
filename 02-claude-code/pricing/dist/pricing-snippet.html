@@ -1,0 +1,224 @@
+<style>
+.ebi-pricing {
+  --ebi-accent: #1f5eff;
+  --ebi-border: #d9dde5;
+  --ebi-radius: 8px;
+  --ebi-gap: 16px;
+  box-sizing: border-box;
+  max-width: 520px;
+  padding: 24px;
+  border: 1px solid var(--ebi-border);
+  border-radius: var(--ebi-radius);
+}
+
+.ebi-pricing *,
+.ebi-pricing *::before,
+.ebi-pricing *::after {
+  box-sizing: inherit;
+}
+
+.ebi-pricing__title {
+  margin: 0 0 var(--ebi-gap);
+}
+
+.ebi-pricing__form {
+  display: grid;
+  gap: var(--ebi-gap);
+}
+
+.ebi-pricing__field {
+  display: grid;
+  gap: 4px;
+}
+
+.ebi-pricing__field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ebi-border);
+  border-radius: var(--ebi-radius);
+}
+
+.ebi-pricing__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ebi-pricing__result {
+  margin-top: var(--ebi-gap);
+}
+
+.ebi-pricing__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ebi-pricing__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ebi-gap);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ebi-border);
+}
+
+.ebi-pricing__row--total {
+  border-bottom: 0;
+  font-weight: 700;
+  color: var(--ebi-accent);
+}
+</style>
+<section class="ebi-pricing" data-currency="EUR" data-locale="en-GB" aria-label="Page pricing estimate">
+  <h3 class="ebi-pricing__title">Estimate your page package</h3>
+  <form class="ebi-pricing__form" novalidate>
+    <label class="ebi-pricing__field">
+      <span>Service pages</span>
+      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
+    </label>
+    <label class="ebi-pricing__check">
+      <input type="checkbox" name="servicesHierarchical">
+      <span>Service pages have a parent / child hierarchy</span>
+    </label>
+    <label class="ebi-pricing__field">
+      <span>Location pages</span>
+      <input type="number" name="locationPages" min="0" max="500" step="1" value="3" inputmode="numeric">
+    </label>
+    <label class="ebi-pricing__check">
+      <input type="checkbox" name="locationsHierarchical">
+      <span>Location pages have a parent / child hierarchy</span>
+    </label>
+  </form>
+  <div class="ebi-pricing__result" aria-live="polite"></div>
+</section>
+<script>
+(function () {
+  'use strict';
+
+  // PLACEHOLDER RATES. All money is integer cents. Change rules here, nowhere else.
+  // Tiers are graduated: pages 1-5 cost 150.00 each, pages 6-15 cost 120.00 each, and so on.
+  const RATES = {
+    services: [
+      { upTo: 5, unitCents: 15000 },
+      { upTo: 15, unitCents: 12000 },
+      { upTo: Infinity, unitCents: 10000 },
+    ],
+    locations: [
+      { upTo: 9, unitCents: 8000 },
+      { upTo: Infinity, unitCents: 6500 },
+    ],
+    hierarchySurchargePct: 15,
+    minimumCents: 50000,
+    maxPages: 500,
+  };
+
+  function tieredTotal(count, tiers) {
+    let remaining = count;
+    let previousLimit = 0;
+    let total = 0;
+    for (const { upTo, unitCents } of tiers) {
+      const inTier = Math.min(remaining, upTo - previousLimit);
+      if (inTier <= 0) break;
+      total += inTier * unitCents;
+      remaining -= inTier;
+      previousLimit = upTo;
+    }
+    return total;
+  }
+
+  function checkCount(name, value, maxPages) {
+    if (!Number.isInteger(value) || value < 0 || value > maxPages) {
+      throw new RangeError(name + ' must be a whole number from 0 to ' + maxPages);
+    }
+  }
+
+  function priceType(count, hierarchical, tiers, surchargePct) {
+    const baseCents = tieredTotal(count, tiers);
+    const surchargeCents = hierarchical ? Math.round((baseCents * surchargePct) / 100) : 0;
+    return { baseCents, surchargeCents };
+  }
+
+  function calculatePrice(input, rates = RATES) {
+    const { servicePages, locationPages, servicesHierarchical, locationsHierarchical } = input;
+    checkCount('servicePages', servicePages, rates.maxPages);
+    checkCount('locationPages', locationPages, rates.maxPages);
+
+    const services = priceType(servicePages, servicesHierarchical, rates.services, rates.hierarchySurchargePct);
+    const locations = priceType(locationPages, locationsHierarchical, rates.locations, rates.hierarchySurchargePct);
+
+    const subtotalCents =
+      services.baseCents + services.surchargeCents + locations.baseCents + locations.surchargeCents;
+    // The minimum only applies once the visitor has chosen something.
+    const minimumTopUpCents =
+      subtotalCents > 0 && subtotalCents < rates.minimumCents ? rates.minimumCents - subtotalCents : 0;
+
+    return {
+      services,
+      locations,
+      minimumTopUpCents,
+      totalCents: subtotalCents + minimumTopUpCents,
+    };
+  }
+
+  function row(label, cents, format, className) {
+    const li = document.createElement('li');
+    li.className = 'ebi-pricing__row' + (className ? ' ' + className : '');
+    const name = document.createElement('span');
+    name.textContent = label;
+    const amount = document.createElement('span');
+    amount.textContent = format.format(cents / 100);
+    li.append(name, amount);
+    return li;
+  }
+
+  function init(rootEl) {
+    const form = rootEl.querySelector('.ebi-pricing__form');
+    const result = rootEl.querySelector('.ebi-pricing__result');
+    const format = new Intl.NumberFormat(rootEl.dataset.locale || 'en-GB', {
+      style: 'currency',
+      currency: rootEl.dataset.currency || 'EUR',
+    });
+
+    function render() {
+      const els = form.elements;
+      let price;
+      try {
+        price = calculatePrice({
+          servicePages: Number(els.servicePages.value),
+          locationPages: Number(els.locationPages.value),
+          servicesHierarchical: els.servicesHierarchical.checked,
+          locationsHierarchical: els.locationsHierarchical.checked,
+        });
+      } catch (err) {
+        result.textContent = 'Enter whole numbers from 0 to ' + RATES.maxPages + '.';
+        return;
+      }
+
+      const list = document.createElement('ul');
+      list.className = 'ebi-pricing__rows';
+      const s = price.services;
+      const l = price.locations;
+      list.append(row('Service pages', s.baseCents, format));
+      if (s.surchargeCents) list.append(row('Service hierarchy surcharge', s.surchargeCents, format));
+      list.append(row('Location pages', l.baseCents, format));
+      if (l.surchargeCents) list.append(row('Location hierarchy surcharge', l.surchargeCents, format));
+      if (price.minimumTopUpCents) list.append(row('Minimum order adjustment', price.minimumTopUpCents, format));
+      list.append(row('Estimated total', price.totalCents, format, 'ebi-pricing__row--total'));
+      result.replaceChildren(list);
+    }
+
+    form.addEventListener('input', render);
+    render();
+  }
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { RATES, tieredTotal, calculatePrice };
+  }
+
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.ebi-pricing:not([data-ebi-ready])').forEach(function (el) {
+      el.setAttribute('data-ebi-ready', '');
+      init(el);
+    });
+  }
+})();
+</script>

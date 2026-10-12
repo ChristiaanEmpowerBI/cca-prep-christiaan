@@ -1,0 +1,22 @@
+<section class="ebi-pricing" data-currency="EUR" data-locale="en-GB" aria-label="Page pricing estimate">
+  <h3 class="ebi-pricing__title">Estimate your page package</h3>
+  <form class="ebi-pricing__form" novalidate>
+    <label class="ebi-pricing__field">
+      <span>Service pages</span>
+      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
+    </label>
+    <label class="ebi-pricing__check">
+      <input type="checkbox" name="servicesHierarchical">
+      <span>Service pages have a parent / child hierarchy</span>
+    </label>
+    <label class="ebi-pricing__field">
+      <span>Location pages</span>
+      <input type="number" name="locationPages" min="0" max="500" step="1" value="3" inputmode="numeric">
+    </label>
+    <label class="ebi-pricing__check">
+      <input type="checkbox" name="locationsHierarchical">
+      <span>Location pages have a parent / child hierarchy</span>
+    </label>
+  </form>
+  <div class="ebi-pricing__result" aria-live="polite"></div>
+</section>
