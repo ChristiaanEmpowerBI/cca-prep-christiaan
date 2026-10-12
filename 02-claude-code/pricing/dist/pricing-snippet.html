@@ -38,14 +38,37 @@
   border-radius: var(--ebi-radius);
 }
 
-.ebi-pricing__check {
-  display: flex;
-  align-items: center;
+.ebi-pricing__hint {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.ebi-pricing__group {
+  display: grid;
   gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ebi-pricing__legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.ebi-pricing__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--ebi-gap);
 }
 
 .ebi-pricing__result {
   margin-top: var(--ebi-gap);
+}
+
+.ebi-pricing__summary {
+  margin: 0 0 8px;
 }
 
 .ebi-pricing__rows {
@@ -72,21 +95,30 @@
   <h3 class="ebi-pricing__title">Estimate your page package</h3>
   <form class="ebi-pricing__form" novalidate>
     <label class="ebi-pricing__field">
-      <span>Service pages</span>
-      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
-    </label>
-    <label class="ebi-pricing__check">
-      <input type="checkbox" name="servicesHierarchical">
-      <span>Service pages have a parent / child hierarchy</span>
+      <span>Service categories <span class="ebi-pricing__hint">(0 if your services are not grouped)</span></span>
+      <input type="number" name="categoryPages" min="0" max="500" step="1" value="0" inputmode="numeric">
     </label>
     <label class="ebi-pricing__field">
-      <span>Location pages</span>
-      <input type="number" name="locationPages" min="0" max="500" step="1" value="3" inputmode="numeric">
+      <span>Service pages <span class="ebi-pricing__hint">(total, across all categories)</span></span>
+      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
     </label>
-    <label class="ebi-pricing__check">
-      <input type="checkbox" name="locationsHierarchical">
-      <span>Location pages have a parent / child hierarchy</span>
-    </label>
+    <fieldset class="ebi-pricing__group">
+      <legend class="ebi-pricing__legend">Location pages</legend>
+      <div class="ebi-pricing__grid">
+        <label class="ebi-pricing__field">
+          <span>Cities</span>
+          <input type="number" name="cities" min="0" max="500" step="1" value="2" inputmode="numeric">
+        </label>
+        <label class="ebi-pricing__field">
+          <span>Districts</span>
+          <input type="number" name="districts" min="0" max="500" step="1" value="4" inputmode="numeric">
+        </label>
+        <label class="ebi-pricing__field">
+          <span>Neighborhoods</span>
+          <input type="number" name="neighborhoods" min="0" max="500" step="1" value="0" inputmode="numeric">
+        </label>
+      </div>
+    </fieldset>
   </form>
   <div class="ebi-pricing__result" aria-live="polite"></div>
 </section>
@@ -94,22 +126,33 @@
 (function () {
   'use strict';
 
-  // PLACEHOLDER RATES. All money is integer cents. Change rules here, nowhere else.
-  // Tiers are graduated: pages 1-5 cost 150.00 each, pages 6-15 cost 120.00 each, and so on.
+  // All money is integer cents. Change rules here, nowhere else.
+  // CONFIRMED: templateCents. Every other rate is a PLACEHOLDER until agreed.
   const RATES = {
+    templateCents: 2500,
+    // Graduated tiers: pages 1-5 cost 150.00 each, pages 6-15 cost 120.00 each, and so on.
     services: [
       { upTo: 5, unitCents: 15000 },
       { upTo: 15, unitCents: 12000 },
       { upTo: Infinity, unitCents: 10000 },
     ],
-    locations: [
-      { upTo: 9, unitCents: 8000 },
-      { upTo: Infinity, unitCents: 6500 },
+    // One flat rate per location type. Locations have no hierarchy.
+    locationUnitCents: { cities: 10000, districts: 7000, neighborhoods: 4000 },
+    // Service-location pages ((services + categories) x locations) are templated, so they get cheaper at volume.
+    serviceLocation: [
+      { upTo: 100, unitCents: 3000 },
+      { upTo: 1000, unitCents: 1500 },
+      { upTo: Infinity, unitCents: 800 },
     ],
-    hierarchySurchargePct: 15,
     minimumCents: 50000,
     maxPages: 500,
   };
+
+  const LOCATION_TYPES = [
+    { key: 'cities', label: 'City pages' },
+    { key: 'districts', label: 'District pages' },
+    { key: 'neighborhoods', label: 'Neighborhood pages' },
+  ];
 
   function tieredTotal(count, tiers) {
     let remaining = count;
@@ -131,29 +174,50 @@
     }
   }
 
-  function priceType(count, hierarchical, tiers, surchargePct) {
-    const baseCents = tieredTotal(count, tiers);
-    const surchargeCents = hierarchical ? Math.round((baseCents * surchargePct) / 100) : 0;
-    return { baseCents, surchargeCents };
+  function countTemplates(hasServices, hasCategories, hasLocations) {
+    let count = 0;
+    if (hasServices) count += 2; // all-services + per-service
+    if (hasCategories) count += 1; // service category
+    if (hasLocations) count += 2; // all-locations + per-location, however many location types are used
+    if ((hasServices || hasCategories) && hasLocations) count += 1; // service-location (covers category-location too)
+    return count;
   }
 
   function calculatePrice(input, rates = RATES) {
-    const { servicePages, locationPages, servicesHierarchical, locationsHierarchical } = input;
-    checkCount('servicePages', servicePages, rates.maxPages);
-    checkCount('locationPages', locationPages, rates.maxPages);
+    checkCount('servicePages', input.servicePages, rates.maxPages);
+    checkCount('categoryPages', input.categoryPages, rates.maxPages);
+    for (const { key } of LOCATION_TYPES) checkCount(key, input[key], rates.maxPages);
 
-    const services = priceType(servicePages, servicesHierarchical, rates.services, rates.hierarchySurchargePct);
-    const locations = priceType(locationPages, locationsHierarchical, rates.locations, rates.hierarchySurchargePct);
+    const servicesCents = tieredTotal(input.servicePages, rates.services);
 
-    const subtotalCents =
-      services.baseCents + services.surchargeCents + locations.baseCents + locations.surchargeCents;
+    const locations = {};
+    let locationsCents = 0;
+    let locationPages = 0;
+    for (const { key } of LOCATION_TYPES) {
+      locations[key] = input[key] * rates.locationUnitCents[key];
+      locationsCents += locations[key];
+      locationPages += input[key];
+    }
+
+    // Every service and every category gets a page on every location.
+    const serviceLocationPages = (input.servicePages + input.categoryPages) * locationPages;
+    const serviceLocationCents = tieredTotal(serviceLocationPages, rates.serviceLocation);
+
+    const templateCount = countTemplates(input.servicePages > 0, input.categoryPages > 0, locationPages > 0);
+    const templatesCents = templateCount * rates.templateCents;
+
+    // Category pages have no per-page price: the category template (inside templatesCents) covers them.
+    const subtotalCents = servicesCents + locationsCents + serviceLocationCents + templatesCents;
     // The minimum only applies once the visitor has chosen something.
     const minimumTopUpCents =
       subtotalCents > 0 && subtotalCents < rates.minimumCents ? rates.minimumCents - subtotalCents : 0;
 
     return {
-      services,
+      pages: input.servicePages + input.categoryPages + locationPages + serviceLocationPages,
+      templates: { count: templateCount, cents: templatesCents },
+      services: { cents: servicesCents },
       locations,
+      serviceLocation: { pages: serviceLocationPages, cents: serviceLocationCents },
       minimumTopUpCents,
       totalCents: subtotalCents + minimumTopUpCents,
     };
@@ -173,21 +237,25 @@
   function init(rootEl) {
     const form = rootEl.querySelector('.ebi-pricing__form');
     const result = rootEl.querySelector('.ebi-pricing__result');
-    const format = new Intl.NumberFormat(rootEl.dataset.locale || 'en-GB', {
+    const locale = rootEl.dataset.locale || 'en-GB';
+    const format = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: rootEl.dataset.currency || 'EUR',
     });
+    const numbers = new Intl.NumberFormat(locale);
 
     function render() {
       const els = form.elements;
+      const counts = {
+        servicePages: Number(els.servicePages.value),
+        categoryPages: Number(els.categoryPages.value),
+        cities: Number(els.cities.value),
+        districts: Number(els.districts.value),
+        neighborhoods: Number(els.neighborhoods.value),
+      };
       let price;
       try {
-        price = calculatePrice({
-          servicePages: Number(els.servicePages.value),
-          locationPages: Number(els.locationPages.value),
-          servicesHierarchical: els.servicesHierarchical.checked,
-          locationsHierarchical: els.locationsHierarchical.checked,
-        });
+        price = calculatePrice(counts);
       } catch (err) {
         result.textContent = 'Enter whole numbers from 0 to ' + RATES.maxPages + '.';
         return;
@@ -195,15 +263,35 @@
 
       const list = document.createElement('ul');
       list.className = 'ebi-pricing__rows';
-      const s = price.services;
-      const l = price.locations;
-      list.append(row('Service pages', s.baseCents, format));
-      if (s.surchargeCents) list.append(row('Service hierarchy surcharge', s.surchargeCents, format));
-      list.append(row('Location pages', l.baseCents, format));
-      if (l.surchargeCents) list.append(row('Location hierarchy surcharge', l.surchargeCents, format));
+      if (price.templates.count) {
+        list.append(row('Templates (' + price.templates.count + ')', price.templates.cents, format));
+      }
+      if (counts.servicePages) {
+        list.append(row('Service pages (' + numbers.format(counts.servicePages) + ')', price.services.cents, format));
+      }
+      for (const { key, label } of LOCATION_TYPES) {
+        if (counts[key]) {
+          list.append(row(label + ' (' + numbers.format(counts[key]) + ')', price.locations[key], format));
+        }
+      }
+      if (price.serviceLocation.pages) {
+        list.append(
+          row(
+            'Service-location pages (' + numbers.format(price.serviceLocation.pages) + ')',
+            price.serviceLocation.cents,
+            format
+          )
+        );
+      }
       if (price.minimumTopUpCents) list.append(row('Minimum order adjustment', price.minimumTopUpCents, format));
       list.append(row('Estimated total', price.totalCents, format, 'ebi-pricing__row--total'));
-      result.replaceChildren(list);
+
+      const summary = document.createElement('p');
+      summary.className = 'ebi-pricing__summary';
+      summary.textContent = price.pages
+        ? numbers.format(price.pages) + ' pages built from ' + price.templates.count + ' templates'
+        : 'Choose how many pages you need.';
+      result.replaceChildren(summary, list);
     }
 
     form.addEventListener('input', render);

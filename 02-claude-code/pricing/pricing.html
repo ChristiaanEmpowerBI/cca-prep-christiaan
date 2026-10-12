@@ -2,21 +2,30 @@
   <h3 class="ebi-pricing__title">Estimate your page package</h3>
   <form class="ebi-pricing__form" novalidate>
     <label class="ebi-pricing__field">
-      <span>Service pages</span>
-      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
-    </label>
-    <label class="ebi-pricing__check">
-      <input type="checkbox" name="servicesHierarchical">
-      <span>Service pages have a parent / child hierarchy</span>
+      <span>Service categories <span class="ebi-pricing__hint">(0 if your services are not grouped)</span></span>
+      <input type="number" name="categoryPages" min="0" max="500" step="1" value="0" inputmode="numeric">
     </label>
     <label class="ebi-pricing__field">
-      <span>Location pages</span>
-      <input type="number" name="locationPages" min="0" max="500" step="1" value="3" inputmode="numeric">
+      <span>Service pages <span class="ebi-pricing__hint">(total, across all categories)</span></span>
+      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
     </label>
-    <label class="ebi-pricing__check">
-      <input type="checkbox" name="locationsHierarchical">
-      <span>Location pages have a parent / child hierarchy</span>
-    </label>
+    <fieldset class="ebi-pricing__group">
+      <legend class="ebi-pricing__legend">Location pages</legend>
+      <div class="ebi-pricing__grid">
+        <label class="ebi-pricing__field">
+          <span>Cities</span>
+          <input type="number" name="cities" min="0" max="500" step="1" value="2" inputmode="numeric">
+        </label>
+        <label class="ebi-pricing__field">
+          <span>Districts</span>
+          <input type="number" name="districts" min="0" max="500" step="1" value="4" inputmode="numeric">
+        </label>
+        <label class="ebi-pricing__field">
+          <span>Neighborhoods</span>
+          <input type="number" name="neighborhoods" min="0" max="500" step="1" value="0" inputmode="numeric">
+        </label>
+      </div>
+    </fieldset>
   </form>
   <div class="ebi-pricing__result" aria-live="polite"></div>
 </section>
