@@ -1,14 +1,18 @@
 .ebi-pricing {
-  --ebi-accent: #1f5eff;
-  --ebi-border: #d9dde5;
-  --ebi-radius: 8px;
-  --ebi-gap: 16px;
-  --ebi-warning: #b42318;
+  --ebi-accent: var(--color-accent, #FF5555);
+  --ebi-border: var(--border-color, #4B4B4B);
+  --ebi-radius: var(--radius-none, 0);
+  --ebi-gap: var(--space-4, 16px);
+  --ebi-warning: var(--color-danger, #FF3C3C);
   box-sizing: border-box;
   max-width: 520px;
-  padding: 24px;
-  border: 1px solid var(--ebi-border);
+  padding: var(--space-5, 24px);
+  border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
+  background: var(--surface-card, #0E0E0E);
+  color: var(--text-body, #FFFFFF);
+  font-size: var(--ws-body, 1rem);
+  line-height: var(--lh-body, 1.6);
 }
 
 .ebi-pricing *,
@@ -19,6 +23,11 @@
 
 .ebi-pricing__title {
   margin: 0 0 var(--ebi-gap);
+  font-size: var(--ws-h4, 1.625rem);
+  font-weight: var(--fw-bold, 700);
+  line-height: var(--lh-heading, 1.2);
+  letter-spacing: var(--ls-heading, 0.01em);
+  color: var(--text-heading, #FFFFFF);
 }
 
 .ebi-pricing__form {
@@ -28,30 +37,47 @@
 
 .ebi-pricing__field {
   display: grid;
-  gap: 4px;
+  gap: var(--space-1, 4px);
+  font-size: var(--ws-body-sm, 0.9375rem);
+  font-weight: var(--fw-medium, 500);
 }
 
 .ebi-pricing__field input {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ebi-border);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
+  background: var(--surface-input, #161616);
+  color: var(--text-body, #FFFFFF);
+  font: inherit;
+  font-weight: var(--fw-regular, 400);
+}
+
+.ebi-pricing__field input:focus {
+  outline: none;
+  border-color: var(--ebi-accent);
+  box-shadow: inset 0 0 0 1px var(--ebi-accent);
 }
 
 .ebi-pricing__check {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2, 8px);
+}
+
+.ebi-pricing__check input[type="checkbox"],
+.ebi-pricing__check input[type="radio"] {
+  accent-color: var(--ebi-accent);
 }
 
 .ebi-pricing__hint {
-  font-size: 0.85em;
-  opacity: 0.75;
+  font-size: var(--ws-caption, 0.8125rem);
+  color: var(--text-muted, #B8B8B8);
 }
 
 .ebi-pricing__group {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2, 8px);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -60,7 +86,10 @@
 
 .ebi-pricing__legend {
   padding: 0;
-  font-weight: 600;
+  font-size: var(--ws-caption, 0.8125rem);
+  font-weight: var(--fw-semibold, 600);
+  letter-spacing: var(--ls-caps, 0.06em);
+  text-transform: uppercase;
 }
 
 .ebi-pricing__grid {
@@ -71,18 +100,22 @@
 
 .ebi-pricing__result {
   margin-top: var(--ebi-gap);
+  padding-top: var(--ebi-gap);
+  border-top: var(--separator, 1px solid #FF5555);
 }
 
 .ebi-pricing__summary {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2, 8px);
+  color: var(--text-muted, #B8B8B8);
 }
 
 .ebi-pricing__notice {
   margin: var(--ebi-gap) 0 0;
-  padding: 10px 12px;
-  border-left: 4px solid var(--ebi-warning);
+  padding: var(--space-3, 12px);
+  border-left: var(--border-width-lg, 4px) solid var(--ebi-warning);
+  background: var(--surface-input, #161616);
   color: var(--ebi-warning);
-  font-weight: 600;
+  font-weight: var(--fw-semibold, 600);
 }
 
 .ebi-pricing__rows {
@@ -95,12 +128,13 @@
   display: flex;
   justify-content: space-between;
   gap: var(--ebi-gap);
-  padding: 6px 0;
-  border-bottom: 1px solid var(--ebi-border);
+  padding: var(--space-2, 8px) 0;
+  border-bottom: var(--border-width, 1px) solid var(--ebi-border);
 }
 
 .ebi-pricing__row--total {
   border-bottom: 0;
-  font-weight: 700;
-  color: var(--ebi-accent);
+  font-size: var(--ws-body-lg, 1.1875rem);
+  font-weight: var(--fw-bold, 700);
+  color: var(--color-highlight, #FF3C3C);
 }
