@@ -3,6 +3,7 @@
   --ebi-border: #d9dde5;
   --ebi-radius: 8px;
   --ebi-gap: 16px;
+  --ebi-warning: #b42318;
   box-sizing: border-box;
   max-width: 520px;
   padding: 24px;
@@ -68,6 +69,14 @@
 
 .ebi-pricing__summary {
   margin: 0 0 8px;
+}
+
+.ebi-pricing__notice {
+  margin: var(--ebi-gap) 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--ebi-warning);
+  color: var(--ebi-warning);
+  font-weight: 600;
 }
 
 .ebi-pricing__rows {

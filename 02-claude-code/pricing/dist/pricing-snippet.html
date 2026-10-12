@@ -4,6 +4,7 @@
   --ebi-border: #d9dde5;
   --ebi-radius: 8px;
   --ebi-gap: 16px;
+  --ebi-warning: #b42318;
   box-sizing: border-box;
   max-width: 520px;
   padding: 24px;
@@ -71,6 +72,14 @@
   margin: 0 0 8px;
 }
 
+.ebi-pricing__notice {
+  margin: var(--ebi-gap) 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--ebi-warning);
+  color: var(--ebi-warning);
+  font-weight: 600;
+}
+
 .ebi-pricing__rows {
   margin: 0;
   padding: 0;
@@ -127,24 +136,27 @@
   'use strict';
 
   // All money is integer cents. Change rules here, nowhere else.
-  // CONFIRMED: templateCents. Every other rate is a PLACEHOLDER until agreed.
+  // CONFIRMED rates, except districts: no rate was given, so they are assumed to match the other pages.
   const RATES = {
     templateCents: 2500,
-    // Graduated tiers: pages 1-5 cost 150.00 each, pages 6-15 cost 120.00 each, and so on.
-    services: [
-      { upTo: 5, unitCents: 15000 },
-      { upTo: 15, unitCents: 12000 },
-      { upTo: Infinity, unitCents: 10000 },
-    ],
-    // One flat rate per location type. Locations have no hierarchy.
-    locationUnitCents: { cities: 10000, districts: 7000, neighborhoods: 4000 },
-    // Service-location pages ((services + categories) x locations) are templated, so they get cheaper at volume.
-    serviceLocation: [
-      { upTo: 100, unitCents: 3000 },
-      { upTo: 1000, unitCents: 1500 },
-      { upTo: Infinity, unitCents: 800 },
-    ],
+    // Fixed pages in every order. Each is priced individually, so none is counted as a templated page.
+    standardPages: ['home', 'about us', 'privacy policy', 'contact us'],
+    standardPageCents: 2500,
+    // Projects priced below this are not taken on. The price is not topped up; the visitor is told instead.
     minimumCents: 50000,
+    pageCents: {
+      categories: 500,
+      services: 500,
+      cities: 500,
+      districts: 500,
+      neighborhoods: 500,
+    },
+    // Service-location pages are graduated: each page is charged at the rate of the tier it falls in.
+    serviceLocation: [
+      { upTo: 500, unitCents: 500 },
+      { upTo: 1000, unitCents: 400 },
+      { upTo: Infinity, unitCents: 300 },
+    ],
     maxPages: 500,
   };
 
@@ -188,13 +200,15 @@
     checkCount('categoryPages', input.categoryPages, rates.maxPages);
     for (const { key } of LOCATION_TYPES) checkCount(key, input[key], rates.maxPages);
 
-    const servicesCents = tieredTotal(input.servicePages, rates.services);
+    const { pageCents } = rates;
+    const servicesCents = input.servicePages * pageCents.services;
+    const categoriesCents = input.categoryPages * pageCents.categories;
 
     const locations = {};
     let locationsCents = 0;
     let locationPages = 0;
     for (const { key } of LOCATION_TYPES) {
-      locations[key] = input[key] * rates.locationUnitCents[key];
+      locations[key] = input[key] * pageCents[key];
       locationsCents += locations[key];
       locationPages += input[key];
     }
@@ -205,21 +219,20 @@
 
     const templateCount = countTemplates(input.servicePages > 0, input.categoryPages > 0, locationPages > 0);
     const templatesCents = templateCount * rates.templateCents;
-
-    // Category pages have no per-page price: the category template (inside templatesCents) covers them.
-    const subtotalCents = servicesCents + locationsCents + serviceLocationCents + templatesCents;
-    // The minimum only applies once the visitor has chosen something.
-    const minimumTopUpCents =
-      subtotalCents > 0 && subtotalCents < rates.minimumCents ? rates.minimumCents - subtotalCents : 0;
+    const standardPagesCents = rates.standardPages.length * rates.standardPageCents;
+    const totalCents =
+      templatesCents + standardPagesCents + servicesCents + categoriesCents + locationsCents + serviceLocationCents;
 
     return {
       pages: input.servicePages + input.categoryPages + locationPages + serviceLocationPages,
       templates: { count: templateCount, cents: templatesCents },
+      standardPages: { count: rates.standardPages.length, cents: standardPagesCents },
       services: { cents: servicesCents },
+      categories: { cents: categoriesCents },
       locations,
       serviceLocation: { pages: serviceLocationPages, cents: serviceLocationCents },
-      minimumTopUpCents,
-      totalCents: subtotalCents + minimumTopUpCents,
+      totalCents,
+      belowMinimum: totalCents < rates.minimumCents,
     };
   }
 
@@ -266,6 +279,16 @@
       if (price.templates.count) {
         list.append(row('Templates (' + price.templates.count + ')', price.templates.cents, format));
       }
+      list.append(
+        row(
+          'Home, about, privacy and contact pages (' + price.standardPages.count + ')',
+          price.standardPages.cents,
+          format
+        )
+      );
+      if (counts.categoryPages) {
+        list.append(row('Service category pages (' + numbers.format(counts.categoryPages) + ')', price.categories.cents, format));
+      }
       if (counts.servicePages) {
         list.append(row('Service pages (' + numbers.format(counts.servicePages) + ')', price.services.cents, format));
       }
@@ -283,15 +306,24 @@
           )
         );
       }
-      if (price.minimumTopUpCents) list.append(row('Minimum order adjustment', price.minimumTopUpCents, format));
       list.append(row('Estimated total', price.totalCents, format, 'ebi-pricing__row--total'));
 
       const summary = document.createElement('p');
       summary.className = 'ebi-pricing__summary';
       summary.textContent = price.pages
-        ? numbers.format(price.pages) + ' pages built from ' + price.templates.count + ' templates'
-        : 'Choose how many pages you need.';
-      result.replaceChildren(summary, list);
+        ? numbers.format(price.pages) + ' pages built from ' + price.templates.count + ' templates, plus ' +
+          price.standardPages.count + ' standard pages'
+        : 'Choose how many pages you need. Every site also has ' + price.standardPages.count + ' standard pages.';
+      const children = [summary, list];
+      if (price.belowMinimum) {
+        const notice = document.createElement('p');
+        notice.className = 'ebi-pricing__notice';
+        notice.textContent =
+          'Although the estimated price is ' + format.format(price.totalCents / 100) +
+          ', we do not take on projects smaller than ' + format.format(RATES.minimumCents / 100) + '.';
+        children.push(notice);
+      }
+      result.replaceChildren(...children);
     }
 
     form.addEventListener('input', render);
