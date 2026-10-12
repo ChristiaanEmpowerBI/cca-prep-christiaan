@@ -5,7 +5,7 @@
   --ebi-gap: var(--space-4, 16px);
   --ebi-warning: var(--color-danger, #FF3C3C);
   box-sizing: border-box;
-  max-width: 520px;
+  max-width: 1100px;
   padding: var(--space-5, 24px);
   border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
@@ -98,10 +98,27 @@
   gap: var(--ebi-gap);
 }
 
+/* Selections on the left, quote on the right. Each side wants at least 400px; when the widget is
+   too narrow for two columns (a phone or a portrait tablet) they wrap and stack, so no breakpoint
+   is needed. */
+.ebi-pricing__layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 2vw;
+  row-gap: var(--ebi-gap);
+}
+
+.ebi-pricing__form,
 .ebi-pricing__result {
-  margin-top: var(--ebi-gap);
-  padding-top: var(--ebi-gap);
-  border-top: var(--separator, 1px solid #FF5555);
+  flex: 1 1 400px;
+  min-width: 0;
+}
+
+.ebi-pricing__result {
+  padding: var(--ebi-gap);
+  border: var(--border-width, 1px) solid var(--ebi-border);
+  border-top: var(--separator, 1px solid var(--ebi-accent));
 }
 
 .ebi-pricing__summary {

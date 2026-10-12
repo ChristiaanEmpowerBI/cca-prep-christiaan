@@ -6,7 +6,7 @@
   --ebi-gap: var(--space-4, 16px);
   --ebi-warning: var(--color-danger, #FF3C3C);
   box-sizing: border-box;
-  max-width: 520px;
+  max-width: 1100px;
   padding: var(--space-5, 24px);
   border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
@@ -99,10 +99,27 @@
   gap: var(--ebi-gap);
 }
 
+/* Selections on the left, quote on the right. Each side wants at least 400px; when the widget is
+   too narrow for two columns (a phone or a portrait tablet) they wrap and stack, so no breakpoint
+   is needed. */
+.ebi-pricing__layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 2vw;
+  row-gap: var(--ebi-gap);
+}
+
+.ebi-pricing__form,
 .ebi-pricing__result {
-  margin-top: var(--ebi-gap);
-  padding-top: var(--ebi-gap);
-  border-top: var(--separator, 1px solid #FF5555);
+  flex: 1 1 400px;
+  min-width: 0;
+}
+
+.ebi-pricing__result {
+  padding: var(--ebi-gap);
+  border: var(--border-width, 1px) solid var(--ebi-border);
+  border-top: var(--separator, 1px solid var(--ebi-accent));
 }
 
 .ebi-pricing__summary {
@@ -142,57 +159,59 @@
 </style>
 <section class="ebi-pricing" data-currency="EUR" data-locale="en-GB" aria-label="Page pricing estimate">
   <h3 class="ebi-pricing__title">Estimate your page package</h3>
-  <form class="ebi-pricing__form" novalidate>
-    <label class="ebi-pricing__field">
-      <span>Service categories <span class="ebi-pricing__hint">(0 if your services are not grouped)</span></span>
-      <input type="number" name="categoryPages" min="0" max="500" step="1" value="0" inputmode="numeric">
-    </label>
-    <label class="ebi-pricing__field">
-      <span>Service pages <span class="ebi-pricing__hint">(total, across all categories)</span></span>
-      <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
-    </label>
-    <fieldset class="ebi-pricing__group">
-      <legend class="ebi-pricing__legend">Location pages</legend>
-      <div class="ebi-pricing__grid">
-        <label class="ebi-pricing__field">
-          <span>Cities</span>
-          <input type="number" name="cities" min="0" max="500" step="1" value="2" inputmode="numeric">
-        </label>
-        <label class="ebi-pricing__field">
-          <span>Districts</span>
-          <input type="number" name="districts" min="0" max="500" step="1" value="4" inputmode="numeric">
-        </label>
-        <label class="ebi-pricing__field">
-          <span>Neighborhoods</span>
-          <input type="number" name="neighborhoods" min="0" max="500" step="1" value="0" inputmode="numeric">
-        </label>
-      </div>
-    </fieldset>
-    <fieldset class="ebi-pricing__group">
-      <legend class="ebi-pricing__legend">
-        Standard pages <span class="ebi-pricing__hint">(untick any your existing website already has)</span>
-      </legend>
-      <div class="ebi-pricing__grid">
-        <label class="ebi-pricing__check">
-          <input type="checkbox" name="home" checked>
-          <span>Home</span>
-        </label>
-        <label class="ebi-pricing__check">
-          <input type="checkbox" name="about" checked>
-          <span>About us</span>
-        </label>
-        <label class="ebi-pricing__check">
-          <input type="checkbox" name="privacy" checked>
-          <span>Privacy policy</span>
-        </label>
-        <label class="ebi-pricing__check">
-          <input type="checkbox" name="contact" checked>
-          <span>Contact us</span>
-        </label>
-      </div>
-    </fieldset>
-  </form>
-  <div class="ebi-pricing__result" aria-live="polite"></div>
+  <div class="ebi-pricing__layout">
+    <form class="ebi-pricing__form" novalidate>
+      <label class="ebi-pricing__field">
+        <span>Service categories <span class="ebi-pricing__hint">(0 if your services are not grouped)</span></span>
+        <input type="number" name="categoryPages" min="0" max="500" step="1" value="0" inputmode="numeric">
+      </label>
+      <label class="ebi-pricing__field">
+        <span>Service pages <span class="ebi-pricing__hint">(total, across all categories)</span></span>
+        <input type="number" name="servicePages" min="0" max="500" step="1" value="5" inputmode="numeric">
+      </label>
+      <fieldset class="ebi-pricing__group">
+        <legend class="ebi-pricing__legend">Location pages</legend>
+        <div class="ebi-pricing__grid">
+          <label class="ebi-pricing__field">
+            <span>Cities</span>
+            <input type="number" name="cities" min="0" max="500" step="1" value="2" inputmode="numeric">
+          </label>
+          <label class="ebi-pricing__field">
+            <span>Districts</span>
+            <input type="number" name="districts" min="0" max="500" step="1" value="4" inputmode="numeric">
+          </label>
+          <label class="ebi-pricing__field">
+            <span>Neighborhoods</span>
+            <input type="number" name="neighborhoods" min="0" max="500" step="1" value="0" inputmode="numeric">
+          </label>
+        </div>
+      </fieldset>
+      <fieldset class="ebi-pricing__group">
+        <legend class="ebi-pricing__legend">
+          Standard pages <span class="ebi-pricing__hint">(untick any your existing website already has)</span>
+        </legend>
+        <div class="ebi-pricing__grid">
+          <label class="ebi-pricing__check">
+            <input type="checkbox" name="home" checked>
+            <span>Home</span>
+          </label>
+          <label class="ebi-pricing__check">
+            <input type="checkbox" name="about" checked>
+            <span>About us</span>
+          </label>
+          <label class="ebi-pricing__check">
+            <input type="checkbox" name="privacy" checked>
+            <span>Privacy policy</span>
+          </label>
+          <label class="ebi-pricing__check">
+            <input type="checkbox" name="contact" checked>
+            <span>Contact us</span>
+          </label>
+        </div>
+      </fieldset>
+    </form>
+    <div class="ebi-pricing__result" aria-live="polite"></div>
+  </div>
 </section>
 <script>
 (function () {
