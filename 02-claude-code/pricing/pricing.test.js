@@ -4,7 +4,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { tieredTotal, calculatePrice, RATES } = require('./pricing.js');
 
-const none = { servicePages: 0, categoryPages: 0, cities: 0, districts: 0, neighborhoods: 0 };
+const allStandard = { home: true, about: true, privacy: true, contact: true };
+// A new website: nothing chosen yet, all four standard pages wanted.
+const none = {
+  servicePages: 0,
+  categoryPages: 0,
+  cities: 0,
+  districts: 0,
+  neighborhoods: 0,
+  standardPages: allStandard,
+};
 
 test('service-location tiers: zero pages cost nothing', () => {
   assert.equal(tieredTotal(0, RATES.serviceLocation), 0);
@@ -147,11 +156,45 @@ test('no service-location pages without services or categories, or without locat
   assert.equal(calculatePrice({ ...none, cities: 10 }).serviceLocation.pages, 0);
 });
 
-test('four standard pages at 25.00 each are in every order', () => {
+test('all four standard pages at 25.00 each when the visitor wants them all', () => {
   const price = calculatePrice({ ...none, servicePages: 1 });
   // home, about us, privacy policy, contact us = 4 * 2500
   assert.equal(price.standardPages.count, 4);
   assert.equal(price.standardPages.cents, 10000);
+});
+
+test('each standard page costs 25.00 and can be chosen on its own', () => {
+  for (const key of Object.keys(allStandard)) {
+    const price = calculatePrice({ ...none, standardPages: { [key]: true } });
+    assert.equal(price.standardPages.count, 1, key);
+    assert.equal(price.standardPages.cents, 2500, key);
+  }
+});
+
+test('two standard pages chosen: home and contact us are 50.00', () => {
+  const price = calculatePrice({ ...none, standardPages: { home: true, contact: true } });
+  assert.equal(price.standardPages.count, 2);
+  assert.equal(price.standardPages.cents, 5000);
+});
+
+test('existing website: unticking all four standard pages removes their cost', () => {
+  const price = calculatePrice({ ...none, servicePages: 2, cities: 3, standardPages: {} });
+  // 2 services on 3 cities was 28000 with standard pages; without them 28000 - 10000
+  assert.equal(price.standardPages.count, 0);
+  assert.equal(price.standardPages.cents, 0);
+  assert.equal(price.totalCents, 18000);
+  assert.equal(price.belowMinimum, true);
+});
+
+test('a missing standardPages input means none are wanted', () => {
+  const { standardPages, ...withoutStandard } = none;
+  assert.equal(standardPages, allStandard);
+  assert.equal(calculatePrice(withoutStandard).standardPages.count, 0);
+});
+
+test('nothing at all selected, with no standard pages, costs nothing', () => {
+  const price = calculatePrice({ ...none, standardPages: {} });
+  assert.equal(price.totalCents, 0);
 });
 
 test('standard pages are not templated pages: they add no templates and no page count', () => {
@@ -191,7 +234,7 @@ test('a large order is not below the minimum', () => {
   assert.equal(calculatePrice({ ...none, servicePages: 50, cities: 50 }).belowMinimum, false);
 });
 
-test('nothing selected costs only the four standard pages, which is below the minimum', () => {
+test('nothing selected, with all four standard pages, costs only those pages and is below the minimum', () => {
   const price = calculatePrice(none);
   assert.equal(price.totalCents, 10000);
   assert.equal(price.belowMinimum, true);

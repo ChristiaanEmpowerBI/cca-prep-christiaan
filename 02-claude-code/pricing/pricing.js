@@ -5,8 +5,8 @@
   // CONFIRMED rates, except districts: no rate was given, so they are assumed to match the other pages.
   const RATES = {
     templateCents: 2500,
-    // Fixed pages in every order. Each is priced individually, so none is counted as a templated page.
-    standardPages: ['home', 'about us', 'privacy policy', 'contact us'],
+    // Optional pages (see STANDARD_PAGES) the visitor ticks when the site does not already have them.
+    // Each is priced individually, so none is counted as a templated page.
     standardPageCents: 2500,
     // Projects priced below this are not taken on. The price is not topped up; the visitor is told instead.
     minimumCents: 50000,
@@ -30,6 +30,13 @@
     { key: 'cities', label: 'City pages' },
     { key: 'districts', label: 'District pages' },
     { key: 'neighborhoods', label: 'Neighborhood pages' },
+  ];
+
+  const STANDARD_PAGES = [
+    { key: 'home', label: 'home' },
+    { key: 'about', label: 'about us' },
+    { key: 'privacy', label: 'privacy policy' },
+    { key: 'contact', label: 'contact us' },
   ];
 
   function tieredTotal(count, tiers) {
@@ -85,14 +92,17 @@
 
     const templateCount = countTemplates(input.servicePages > 0, input.categoryPages > 0, locationPages > 0);
     const templatesCents = templateCount * rates.templateCents;
-    const standardPagesCents = rates.standardPages.length * rates.standardPageCents;
+    // A missing standardPages input means none are wanted.
+    const chosen = input.standardPages || {};
+    const standardPageCount = STANDARD_PAGES.filter(({ key }) => chosen[key]).length;
+    const standardPagesCents = standardPageCount * rates.standardPageCents;
     const totalCents =
       templatesCents + standardPagesCents + servicesCents + categoriesCents + locationsCents + serviceLocationCents;
 
     return {
       pages: input.servicePages + input.categoryPages + locationPages + serviceLocationPages,
       templates: { count: templateCount, cents: templatesCents },
-      standardPages: { count: rates.standardPages.length, cents: standardPagesCents },
+      standardPages: { count: standardPageCount, cents: standardPagesCents },
       services: { cents: servicesCents },
       categories: { cents: categoriesCents },
       locations,
@@ -132,9 +142,11 @@
         districts: Number(els.districts.value),
         neighborhoods: Number(els.neighborhoods.value),
       };
+      const standardPages = {};
+      for (const { key } of STANDARD_PAGES) standardPages[key] = els[key].checked;
       let price;
       try {
-        price = calculatePrice(counts);
+        price = calculatePrice({ ...counts, standardPages });
       } catch (err) {
         result.textContent = 'Enter whole numbers from 0 to ' + RATES.maxPages + '.';
         return;
@@ -145,13 +157,10 @@
       if (price.templates.count) {
         list.append(row('Templates (' + price.templates.count + ')', price.templates.cents, format));
       }
-      list.append(
-        row(
-          'Home, about, privacy and contact pages (' + price.standardPages.count + ')',
-          price.standardPages.cents,
-          format
-        )
-      );
+      if (price.standardPages.count) {
+        const names = STANDARD_PAGES.filter(({ key }) => standardPages[key]).map(({ label }) => label);
+        list.append(row('Standard pages (' + names.join(', ') + ')', price.standardPages.cents, format));
+      }
       if (counts.categoryPages) {
         list.append(row('Service category pages (' + numbers.format(counts.categoryPages) + ')', price.categories.cents, format));
       }
@@ -176,10 +185,12 @@
 
       const summary = document.createElement('p');
       summary.className = 'ebi-pricing__summary';
+      const standardNote = price.standardPages.count
+        ? ', plus ' + price.standardPages.count + ' standard ' + (price.standardPages.count === 1 ? 'page' : 'pages')
+        : '';
       summary.textContent = price.pages
-        ? numbers.format(price.pages) + ' pages built from ' + price.templates.count + ' templates, plus ' +
-          price.standardPages.count + ' standard pages'
-        : 'Choose how many pages you need. Every site also has ' + price.standardPages.count + ' standard pages.';
+        ? numbers.format(price.pages) + ' pages built from ' + price.templates.count + ' templates' + standardNote
+        : 'Choose how many pages you need.';
       const children = [summary, list];
       if (price.belowMinimum) {
         const notice = document.createElement('p');

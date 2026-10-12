@@ -38,6 +38,12 @@
   border-radius: var(--ebi-radius);
 }
 
+.ebi-pricing__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ebi-pricing__hint {
   font-size: 0.85em;
   opacity: 0.75;

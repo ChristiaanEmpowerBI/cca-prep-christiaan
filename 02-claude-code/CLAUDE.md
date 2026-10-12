@@ -1,6 +1,6 @@
 # Pricing calculator for an Elementor HTML widget
 
-A self-contained price calculator pasted into an Elementor Pro **HTML widget** on WordPress. The visitor chooses how many service categories and service pages they need and how many city, district and neighborhood pages they need; the snippet works out the page count (including service-location pages: every service and category on every location) and the templates required, adds four fixed standard pages (home, about us, privacy policy, contact us), and shows an estimate, with a notice when it is below the minimum project size.
+A self-contained price calculator pasted into an Elementor Pro **HTML widget** on WordPress. The visitor chooses how many service categories and service pages they need and how many city, district and neighborhood pages they need; the snippet works out the page count (including service-location pages: every service and category on every location) and the templates required, lets them tick which of four standard pages (home, about us, privacy policy, contact us) they need, since the work may be for an existing website, and shows an estimate, with a notice when it is below the minimum project size.
 
 ## Layout
 - `pricing/pricing.js`: pricing rules (pure functions) plus DOM wiring
