@@ -17,7 +17,7 @@
           },
           "line": {
             "type": ["integer", "null"],
-            "description": "Line number in the new version of the file; null for a file-level finding."
+            "description": "Line number in the new version of the file (never a position inside the diff); null for a file-level finding."
           },
           "severity": {
             "type": "string",
