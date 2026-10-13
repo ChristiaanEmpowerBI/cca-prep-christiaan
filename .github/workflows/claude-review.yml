@@ -1,0 +1,64 @@
+name: Claude PR review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# A new push supersedes the review still running for the previous one.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Least privilege: read the code, write one PR comment.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    # Pull requests from forks never receive repository secrets, so skip them.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the review needs history to diff against the base branch
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.296
+
+      - name: Check API key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Run Claude review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_REF: ${{ github.base_ref }}
+        run: bash 05-ci-cd/run-review.sh
+
+      - name: Format review
+        id: format
+        run: python3 05-ci-cd/format_review.py
+
+      # Post before gating, so the author sees the findings even when the check fails.
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file review.md --edit-last --create-if-none
+
+      - name: Fail on high-severity findings
+        if: steps.format.outputs.high_count != '0'
+        run: |
+          echo "::error::Claude found ${{ steps.format.outputs.high_count }} high-severity issue(s). See the review comment."
+          exit 1
