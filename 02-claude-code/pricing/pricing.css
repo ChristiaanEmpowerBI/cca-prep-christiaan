@@ -1,3 +1,18 @@
+/* Registering the angle as a typed property lets the browser animate it smoothly. It inherits, so the
+   one animation on .ebi-pricing turns every gradient border inside it in step. @property and
+   @keyframes names are page-wide, not scoped to the widget, so both carry the ebi prefix. */
+@property --ebi-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@keyframes ebi-pricing-spin {
+  to {
+    --ebi-angle: 360deg;
+  }
+}
+
 .ebi-pricing {
   --ebi-accent: var(--color-accent, #FF5555);
   --ebi-border: var(--border-color, #4B4B4B);
@@ -5,15 +20,34 @@
   --ebi-gap: var(--space-4, 16px);
   --ebi-total: #4ADE80;
   --ebi-notice: #60A5FA;
+  --ebi-frame: 1px;
+  /* Fluid type: each size grows with the viewport from 390px to 1440px, then stops. The rem part keeps
+     it responding to the browser's text-size setting. */
+  --ebi-text-caption: clamp(0.8125rem, 0.789rem + 0.095vw, 0.875rem);
+  --ebi-text-small: clamp(0.9375rem, 0.914rem + 0.095vw, 1rem);
+  --ebi-text-body: clamp(1rem, 0.954rem + 0.19vw, 1.125rem);
+  --ebi-text-large: clamp(1.1875rem, 1.118rem + 0.286vw, 1.375rem);
+  --ebi-text-title: clamp(1.625rem, 1.439rem + 0.762vw, 2.125rem);
   box-sizing: border-box;
+  /* Fill the container, never shrink to fit the content, so ticking a box cannot change the width. */
+  width: 100%;
   max-width: 1100px;
   padding: var(--space-5, 24px);
   border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
   background: var(--surface-card, #0E0E0E);
+  /* Turns --ebi-angle once every 3 seconds. The boxes the visitor can fill in or tick draw their
+     gradient borders from it (see the rule after .ebi-pricing__cell--empty). */
+  animation: ebi-pricing-spin 3s linear infinite;
   color: var(--text-body, #FFFFFF);
-  font-size: var(--ws-body, 1rem);
+  font-size: var(--ebi-text-body);
   line-height: var(--lh-body, 1.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ebi-pricing {
+    animation: none;
+  }
 }
 
 .ebi-pricing *,
@@ -24,7 +58,7 @@
 
 .ebi-pricing__title {
   margin: 0 0 var(--ebi-gap);
-  font-size: var(--ws-h4, 1.625rem);
+  font-size: var(--ebi-text-title);
   font-weight: var(--fw-bold, 700);
   line-height: var(--lh-heading, 1.2);
   letter-spacing: var(--ls-heading, 0.01em);
@@ -39,18 +73,18 @@
 .ebi-pricing__field {
   display: grid;
   gap: var(--space-1, 4px);
-  font-size: var(--ws-body-sm, 0.9375rem);
+  font-size: var(--ebi-text-small);
   font-weight: var(--fw-medium, 500);
 }
 
 .ebi-pricing__field input {
   width: 100%;
   padding: var(--space-2, 8px) var(--space-3, 12px);
-  border: var(--border-width, 1px) solid var(--ebi-border);
   border-radius: var(--ebi-radius);
-  background: var(--surface-input, #161616);
   color: var(--text-body, #FFFFFF);
   font: inherit;
+  /* Never below 1rem: phone browsers zoom the page when you focus a field with smaller text. */
+  font-size: max(1rem, var(--ebi-text-small));
   font-weight: var(--fw-regular, 400);
 }
 
@@ -68,11 +102,62 @@
 
 .ebi-pricing__check input[type="checkbox"],
 .ebi-pricing__check input[type="radio"] {
+  flex: none;
   accent-color: var(--ebi-accent);
 }
 
+/* The standard pages: a fixed grid of two columns by three rows. Every cell is the same size, so how
+   long a label is, or whether a box is ticked, never changes a cell. The four pages fill the first four
+   cells; the last two are empty placeholders. To get three columns by two rows instead, change the 2
+   below to 3. */
+.ebi-pricing__cells {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--space-2, 8px);
+}
+
+.ebi-pricing__cell {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border: var(--border-width, 1px) solid var(--ebi-border);
+  border-radius: var(--ebi-radius);
+}
+
+.ebi-pricing__cell--empty {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+/* Gradient border for the boxes the visitor interacts with: the number fields and the tick cells. The
+   border is transparent, the box colour is painted inside the padding box, and a spinning conic gradient
+   behind it shows through the border. The empty placeholder cells are not interactive, so they keep a
+   plain dashed border. A focused number field switches to a solid accent border (see :focus above). */
+.ebi-pricing__field input,
+.ebi-pricing__check {
+  border: var(--ebi-frame) solid transparent;
+  background:
+    linear-gradient(var(--ebi-fill), var(--ebi-fill)) padding-box,
+    conic-gradient(
+      from var(--ebi-angle, 0deg),
+      var(--ebi-accent),
+      var(--ebi-total),
+      var(--ebi-notice),
+      var(--ebi-accent)
+    ) border-box;
+}
+
+.ebi-pricing__field input {
+  --ebi-fill: var(--surface-input, #161616);
+}
+
+.ebi-pricing__check {
+  --ebi-fill: var(--surface-card, #0E0E0E);
+}
+
 .ebi-pricing__hint {
-  font-size: var(--ws-caption, 0.8125rem);
+  font-size: var(--ebi-text-caption);
   color: var(--text-muted, #B8B8B8);
 }
 
@@ -87,7 +172,7 @@
 
 .ebi-pricing__legend {
   padding: 0;
-  font-size: var(--ws-caption, 0.8125rem);
+  font-size: var(--ebi-text-caption);
   font-weight: var(--fw-semibold, 600);
   letter-spacing: var(--ls-caps, 0.06em);
   text-transform: uppercase;
@@ -158,13 +243,13 @@
 
 .ebi-pricing__row--sub {
   padding-left: var(--ebi-gap);
-  font-size: var(--ws-body-sm, 0.9375rem);
+  font-size: var(--ebi-text-small);
   color: var(--text-muted, #B8B8B8);
 }
 
 .ebi-pricing__row--total {
   border-bottom: 0;
-  font-size: var(--ws-body-lg, 1.1875rem);
+  font-size: var(--ebi-text-large);
   font-weight: var(--fw-bold, 700);
   color: var(--ebi-total);
 }
