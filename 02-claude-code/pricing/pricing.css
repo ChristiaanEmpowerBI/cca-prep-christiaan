@@ -3,7 +3,8 @@
   --ebi-border: var(--border-color, #4B4B4B);
   --ebi-radius: var(--radius-none, 0);
   --ebi-gap: var(--space-4, 16px);
-  --ebi-warning: var(--color-danger, #FF3C3C);
+  --ebi-total: #4ADE80;
+  --ebi-notice: #60A5FA;
   box-sizing: border-box;
   max-width: 1100px;
   padding: var(--space-5, 24px);
@@ -129,9 +130,9 @@
 .ebi-pricing__notice {
   margin: var(--ebi-gap) 0 0;
   padding: var(--space-3, 12px);
-  border-left: var(--border-width-lg, 4px) solid var(--ebi-warning);
+  border-left: var(--border-width-lg, 4px) solid var(--ebi-notice);
   background: var(--surface-input, #161616);
-  color: var(--ebi-warning);
+  color: var(--ebi-notice);
   font-weight: var(--fw-semibold, 600);
 }
 
@@ -149,9 +150,21 @@
   border-bottom: var(--border-width, 1px) solid var(--ebi-border);
 }
 
+/* A heading row with indented price-band rows under it. */
+.ebi-pricing__row--group {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.ebi-pricing__row--sub {
+  padding-left: var(--ebi-gap);
+  font-size: var(--ws-body-sm, 0.9375rem);
+  color: var(--text-muted, #B8B8B8);
+}
+
 .ebi-pricing__row--total {
   border-bottom: 0;
   font-size: var(--ws-body-lg, 1.1875rem);
   font-weight: var(--fw-bold, 700);
-  color: var(--color-highlight, #FF3C3C);
+  color: var(--ebi-total);
 }

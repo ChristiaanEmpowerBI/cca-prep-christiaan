@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { tieredTotal, calculatePrice, RATES } = require('./pricing.js');
+const { tieredBreakdown, tieredTotal, calculatePrice, RATES } = require('./pricing.js');
 
 const allStandard = { home: true, about: true, privacy: true, contact: true };
 // A new website: nothing chosen yet, all four standard pages wanted.
@@ -42,6 +42,53 @@ test('service-location tier edge: page 1,001 is charged at the third-tier rate',
 test('1,500 service-location pages cost 6,000.00', () => {
   // 500 * 500 + 500 * 400 + 500 * 300 = 250000 + 200000 + 150000
   assert.equal(tieredTotal(1500, RATES.serviceLocation), 600000);
+});
+
+test('breakdown: no pages means no price bands', () => {
+  assert.deepEqual(tieredBreakdown(0, RATES.serviceLocation), []);
+});
+
+test('breakdown: 30 pages are all in the 5.00 band', () => {
+  // 30 * 500
+  assert.deepEqual(tieredBreakdown(30, RATES.serviceLocation), [{ pages: 30, unitCents: 500, cents: 15000 }]);
+});
+
+test('breakdown edge: 500 pages are one band and 501 adds a one-page band at 4.00', () => {
+  assert.equal(tieredBreakdown(500, RATES.serviceLocation).length, 1);
+  assert.deepEqual(tieredBreakdown(501, RATES.serviceLocation), [
+    { pages: 500, unitCents: 500, cents: 250000 },
+    { pages: 1, unitCents: 400, cents: 400 },
+  ]);
+});
+
+test('breakdown: 840 pages are 500 at 5.00 and 340 at 4.00', () => {
+  // 500 * 500 = 250000; 340 * 400 = 136000
+  assert.deepEqual(tieredBreakdown(840, RATES.serviceLocation), [
+    { pages: 500, unitCents: 500, cents: 250000 },
+    { pages: 340, unitCents: 400, cents: 136000 },
+  ]);
+});
+
+test('breakdown: 1,500 pages are 500 at 5.00, 500 at 4.00 and 500 at 3.00', () => {
+  // 500 * 500 = 250000; 500 * 400 = 200000; 500 * 300 = 150000
+  assert.deepEqual(tieredBreakdown(1500, RATES.serviceLocation), [
+    { pages: 500, unitCents: 500, cents: 250000 },
+    { pages: 500, unitCents: 400, cents: 200000 },
+    { pages: 500, unitCents: 300, cents: 150000 },
+  ]);
+});
+
+test('8 categories, 20 services, 30 cities: the quote shows the 840 pages split by price band', () => {
+  const price = calculatePrice({ ...none, categoryPages: 8, servicePages: 20, cities: 30 });
+  // service-location: (20 + 8) * 30 = 840
+  assert.equal(price.serviceLocation.pages, 840);
+  assert.deepEqual(price.serviceLocation.tiers, [
+    { pages: 500, unitCents: 500, cents: 250000 },
+    { pages: 340, unitCents: 400, cents: 136000 },
+  ]);
+  assert.equal(price.serviceLocation.cents, 386000);
+  // templates 15000 + standard pages 10000 + categories 8 * 500 + services 20 * 500 + cities 30 * 500 + 386000
+  assert.equal(price.totalCents, 440000);
 });
 
 test('3 categories, 10 services, 2 cities, 10 neighborhoods is 181 pages from 6 templates', () => {

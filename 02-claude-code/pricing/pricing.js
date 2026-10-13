@@ -39,18 +39,23 @@
     { key: 'contact', label: 'contact us' },
   ];
 
-  function tieredTotal(count, tiers) {
+  // How many of the pages fall in each tier, and what they cost. Tiers that get no pages are left out.
+  function tieredBreakdown(count, tiers) {
+    const lines = [];
     let remaining = count;
     let previousLimit = 0;
-    let total = 0;
     for (const { upTo, unitCents } of tiers) {
-      const inTier = Math.min(remaining, upTo - previousLimit);
-      if (inTier <= 0) break;
-      total += inTier * unitCents;
-      remaining -= inTier;
+      const pages = Math.min(remaining, upTo - previousLimit);
+      if (pages <= 0) break;
+      lines.push({ pages, unitCents, cents: pages * unitCents });
+      remaining -= pages;
       previousLimit = upTo;
     }
-    return total;
+    return lines;
+  }
+
+  function tieredTotal(count, tiers) {
+    return tieredBreakdown(count, tiers).reduce((total, line) => total + line.cents, 0);
   }
 
   function checkCount(name, value, maxPages) {
@@ -88,6 +93,7 @@
 
     // Every service and every category gets a page on every location.
     const serviceLocationPages = (input.servicePages + input.categoryPages) * locationPages;
+    const serviceLocationTiers = tieredBreakdown(serviceLocationPages, rates.serviceLocation);
     const serviceLocationCents = tieredTotal(serviceLocationPages, rates.serviceLocation);
 
     const templateCount = countTemplates(input.servicePages > 0, input.categoryPages > 0, locationPages > 0);
@@ -106,7 +112,7 @@
       services: { cents: servicesCents },
       categories: { cents: categoriesCents },
       locations,
-      serviceLocation: { pages: serviceLocationPages, cents: serviceLocationCents },
+      serviceLocation: { pages: serviceLocationPages, cents: serviceLocationCents, tiers: serviceLocationTiers },
       totalCents,
       belowMinimum: totalCents < rates.minimumCents,
     };
@@ -117,9 +123,13 @@
     li.className = 'ebi-pricing__row' + (className ? ' ' + className : '');
     const name = document.createElement('span');
     name.textContent = label;
-    const amount = document.createElement('span');
-    amount.textContent = format.format(cents / 100);
-    li.append(name, amount);
+    li.append(name);
+    // A heading row (no amount of its own) passes null for cents.
+    if (cents !== null) {
+      const amount = document.createElement('span');
+      amount.textContent = format.format(cents / 100);
+      li.append(amount);
+    }
     return li;
   }
 
@@ -173,13 +183,14 @@
         }
       }
       if (price.serviceLocation.pages) {
-        list.append(
-          row(
-            'Service-location pages (' + numbers.format(price.serviceLocation.pages) + ')',
-            price.serviceLocation.cents,
-            format
-          )
-        );
+        const heading = 'Service-location pages (' + numbers.format(price.serviceLocation.pages) + ')';
+        list.append(row(heading, null, format, 'ebi-pricing__row--group'));
+        for (const tier of price.serviceLocation.tiers) {
+          const label =
+            numbers.format(tier.pages) + (tier.pages === 1 ? ' page at ' : ' pages at ') +
+            format.format(tier.unitCents / 100);
+          list.append(row(label, tier.cents, format, 'ebi-pricing__row--sub'));
+        }
       }
       list.append(row('Estimated total', price.totalCents, format, 'ebi-pricing__row--total'));
 
@@ -208,7 +219,7 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { RATES, tieredTotal, calculatePrice };
+    module.exports = { RATES, tieredBreakdown, tieredTotal, calculatePrice };
   }
 
   if (typeof document !== 'undefined') {

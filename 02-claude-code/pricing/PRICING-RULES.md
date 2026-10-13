@@ -41,7 +41,7 @@ A site with services and locations needs 5 templates, and 6 with categories. The
 ## Rules
 1. **Templates:** 25.00 each, charged once per template needed.
 2. **Pages:** 5.00 each for service category, service, city, district and neighborhood pages.
-3. **Service-location pages use graduated tiers.** Each page is charged at the rate of the tier it falls in, not the whole order: 5.00 for pages 1-500, 4.00 for pages 501-1,000, 3.00 from page 1,001. For 1,500 pages: (500 x 5.00) + (500 x 4.00) + (500 x 3.00) = 6,000.00.
+3. **Service-location pages use graduated tiers.** Each page is charged at the rate of the tier it falls in, not the whole order: 5.00 for pages 1-500, 4.00 for pages 501-1,000, 3.00 from page 1,001. For 1,500 pages: (500 x 5.00) + (500 x 4.00) + (500 x 3.00) = 6,000.00. The quote shows one line per price band in use (for example "500 pages at 5.00" and "340 pages at 4.00" for 840 pages), so the visitor can see where the total comes from.
 4. **Standard pages:** 25.00 for each one the visitor ticks, so 0.00 to 100.00.
 5. **Total** = templates + standard pages + pages + service-location pages.
 6. **Minimum project size: 500.00.** We do not take on projects smaller than this. The price is **not** topped up: the calculator still shows the calculated total and adds the notice "Although the estimated price is 280.00, we do not take on projects smaller than 500.00." (with the real figure). A total of exactly 500.00 is accepted.
