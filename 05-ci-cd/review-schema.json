@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Two or three sentences: what the PR changes and the overall risk."
+    },
+    "findings": {
+      "type": "array",
+      "description": "Empty when the diff has no issue that meets the criteria in CLAUDE.md.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Repo-relative path of the file the finding is in."
+          },
+          "line": {
+            "type": ["integer", "null"],
+            "description": "Line number in the new version of the file; null for a file-level finding."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "category": {
+            "type": "string",
+            "enum": ["bug", "security", "data-loss", "error-handling", "test-gap", "other"]
+          },
+          "issue": {
+            "type": "string",
+            "description": "One sentence stating the defect."
+          },
+          "failure_scenario": {
+            "type": "string",
+            "description": "Concrete input or state that triggers it, and the wrong result."
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "The smallest change that fixes it."
+          }
+        },
+        "required": ["file", "line", "severity", "category", "issue", "failure_scenario", "suggestion"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["summary", "findings"],
+  "additionalProperties": false
+}
