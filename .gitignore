@@ -2,3 +2,8 @@
 node_modules/
 __pycache__/
 .venv/
+
+# Scratch output of 05-ci-cd/run-review.sh and format_review.py
+pr.diff
+review-output.json
+review.md
